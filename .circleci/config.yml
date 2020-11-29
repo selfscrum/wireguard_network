@@ -14,7 +14,7 @@ jobs:
       - checkout
       - run:
           name: Install packer
-          command: sudo apt -y install packer
+          command: snap install packer
       - run: 
           name: Build a snapshot with packer
           command: |
