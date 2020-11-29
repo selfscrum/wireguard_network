@@ -6,17 +6,10 @@ workflows:
 
 version: 2
 
-parameters:
-  env_hcloud_token:
-    type: string
-    default: 
-      
 jobs:
   packer:
     machine:
       image: ubuntu-2004:202010-01
-      environment:
-        HCLOUD_TOKEN: <<pipeline.parameters.env_hcloud_token>>
       steps:
         - checkout
         - run:
