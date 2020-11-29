@@ -1,0 +1,31 @@
+{
+  "min_packer_version": "0.12.0",
+  "variables": {
+    "wireguard_version": "1.8.5",
+    "unbound_version": "1.8.5",
+  },
+  "builders": [{
+    "image": "ubuntu-20.04",
+    "name": "ubuntu20-wireguard-dns",
+    "type": "hcloud",
+    "location": "nbg1",
+    "server_type" : "cpx11",
+    "snapshot_name": "ubuntu20-wireguard-dns",
+    "ssh_username": "root"
+  }],
+  "provisioners": [{
+    "type": "file",
+    "source": "{{template_dir}}/../",
+    "destination": "/tmp/wireguard_dns"
+  },{
+    "type": "shell",
+    "inline": [
+      "sudo chmod +x /tmp/wireguard_dns/modules/install-wireguard/install-wireguard",
+      "/tmp/wireguard_dns/modules/install-wireguard/install-wireguard --version {{user `wireguard_version`}}",
+      "sudo chmod +x /tmp/wireguard_dns/modules/install-unbound/install-unbound",
+      "/tmp/wireguard_dns/modules/install-unbound/install-unbound --version {{user `unbound_version`}}",
+      "rm -rf /tmp/wireguard_dns"
+    ],
+    "pause_before": "30s"
+  }]
+}

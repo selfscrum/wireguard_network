@@ -1,0 +1,14 @@
+{
+    "system_function" : "WIREGUARD",
+    "github_user" : "selfscrum",
+    "github_repo" : "wireguard_network",
+    "tfc_organization" :"selfscrum",
+    "workspace" : "wireguard_network",
+    "env_name" : "wireguard", 
+    "env_stage" : "dev",
+    "wireguard_image" : "",
+    "instance_type" :"cpx11",
+    "network_zone" :"eu-central",
+    "location" : "nbg1",
+    "keyname" :"tfh_key",
+}
