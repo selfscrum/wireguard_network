@@ -57,7 +57,7 @@ resource "tfe_variable" "ws_system_function" {
 }
 
 resource "tfe_variable" "ws_wireguard_image" {
-    key          = "consul_image"
+    key          = "wireguard_image"
     value        = lookup(local.system, "wireguard_image")
     category     = "terraform"
     workspace_id = tfe_workspace.wireguard_network.id

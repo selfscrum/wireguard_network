@@ -1,3 +1,10 @@
 #!/bin/bash
 
-echo "installing wireguard $1..."
+echo "installing wireguard $1 ..."
+while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
+
+apt-get -y update
+apt-get -y install wireguard
+ufw allow 51820/udp
+ufw reload
+apt -y install resolvconf

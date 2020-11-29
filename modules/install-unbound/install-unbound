@@ -1,3 +1,171 @@
 #!/bin/bash
+#
+# install-unbound - Install and configure unbound for usage on a wireguard server
+# 
 
-echo "installing unbound $1..."
+set -e
+
+function print_usage {
+  echo
+  echo "Usage: install-unbound [OPTIONS]"
+  echo
+  echo "This script can be used to install unbound in a simple configuration."
+  echo
+  echo "Options:"
+  echo
+  echo -e "  --domain\t\tThe name that will be the local domain."
+  echo -e "  --threads\t\tThe number of cores the machine has. Defaults to 1."
+  echo
+  echo "Example:"
+  echo
+  echo "  install-unbound --domain test.local"
+}
+
+
+function log {
+  local -r level="$1"
+  local -r message="$2"
+  local -r timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+  >&2 echo -e "${timestamp} [${level}] [$SCRIPT_NAME] ${message}"
+}
+
+function log_info {
+  local -r message="$1"
+  log "INFO" "$message"
+}
+
+function log_warn {
+  local -r message="$1"
+  log "WARN" "$message"
+}
+
+function log_error {
+  local -r message="$1"
+  log "ERROR" "$message"
+}
+
+function assert_not_empty {
+  local -r arg_name="$1"
+  local -r arg_value="$2"
+
+  if [[ -z "$arg_value" ]]; then
+    log_error "The value for '$arg_name' cannot be empty"
+    print_usage
+    exit 1
+  fi
+}
+
+function install_unbound {
+        apt-get -y update
+        apt install -y unbound
+        mkdir -p /var/lib/unbound
+        wget https://www.internic.net/domain/named.root -O /var/lib/unbound/root.hints
+}
+
+function disable_systemd_resolved {
+        systemctl disable systemd-resolved
+        mkdir -p /etc/NetworkManager/conf.d
+        cat << EOF > /etc/NetworkManager/conf.d/nosystemd.conf
+[main]
+dns=none
+systemd-resolved=false
+EOF
+}
+
+function create_unbound_conf {
+        domain=$1
+        threads=$2
+        slabs=$((2 * $threads))
+
+        cat << EOF > /etc/unbound/unbound.conf
+## Authoritative, validating, recursive caching DNS
+## for use on wireguard server 
+server:
+    verbosity: 1
+    interface: 0.0.0.0
+    port: 53
+    do-ip4: yes
+    do-ip6: no
+    do-udp: yes
+    do-tcp: yes
+    access-control: 10.0.0.0/8 allow
+    access-control: 127.0.0.0/8 allow
+    access-control: 192.168.0.0/16 allow
+    root-hints: "/var/lib/unbound/root.hints"
+    hide-identity: yes
+    hide-version: yes
+    harden-glue: yes
+    harden-dnssec-stripped: yes
+    use-caps-for-id: yes
+    cache-min-ttl: 3600
+    cache-max-ttl: 86400
+    prefetch: yes
+    num-threads: $threads
+    msg-cache-slabs: $slabs
+    rrset-cache-slabs: $slabs
+    infra-cache-slabs: $slabs
+    key-cache-slabs: $slabs
+    rrset-cache-size: 128m
+    msg-cache-size: 128m
+    so-rcvbuf: 1m
+    private-address: 192.168.0.0/16
+    private-address: 172.16.0.0/12
+    private-address: 10.0.0.0/8
+    private-domain: "$domain"
+    unwanted-reply-threshold: 10000
+    do-not-query-localhost: no
+    auto-trust-anchor-file: "/var/lib/unbound/root.key"
+    val-clean-additional: yes
+		qname-minimisation: yes
+    local-zone: "$domain." static
+  forward-zone:
+   name: "."
+   forward-addr: 213.133.98.98@53
+   forward-addr: 213.133.99.99@53
+   forward-addr: 213.133.100.100@53
+EOF
+}
+
+function install {
+  local domain="nodomain"
+  local threads="1"
+
+  while [[ $# -gt 0 ]]; do
+    local key="$1"
+
+    case "$key" in
+      --domain)
+        assert_not_empty "$key" "$2"
+        domain="$2"
+        shift
+        ;;
+      --threads)
+        assert_not_empty "$key" "$2"
+        threads="$2"
+        shift
+        ;;
+      *)
+        log_error "Unrecognized argument: $key"
+        print_usage
+        exit 1
+        ;;
+    esac
+
+    shift
+  done
+
+  log_info "Starting Unbound install"
+
+  install_unbound
+  disable_systemd_resolved
+  create_unbound_conf $domain $threads
+
+  if command -v unbound; then
+    log_info "unbound install complete!";
+  else
+    log_info "Could not find unbound command. Aborting.";
+    exit 1;
+  fi
+}
+
+install "$@"
