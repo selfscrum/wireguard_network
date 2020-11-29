@@ -2,7 +2,7 @@
   "min_packer_version": "0.12.0",
   "variables": {
     "wireguard_version": "1.8.5",
-    "unbound_version": "1.8.5",
+    "unbound_version": "0.0.7"
   },
   "builders": [{
     "image": "ubuntu-20.04",
