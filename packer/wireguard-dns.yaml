@@ -14,6 +14,9 @@
     "ssh_username": "root"
   }],
   "provisioners": [{
+    "type": "shell",
+    "inline": ["mkdir -p /tmp/wireguard_dns"]
+  },{
     "type": "file",
     "source": "{{template_dir}}/../",
     "destination": "/tmp/wireguard_dns"
