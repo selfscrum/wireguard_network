@@ -28,17 +28,14 @@ provider "hcloud" {
 module "wireguard_server" {
   source = "../modules/wireguard_server"
   cluster_name      = format("%s-%s-server",var.env_stage, var.env_name)
-  cluster_size      = var.num_servers
-  image             = var.consul_image
-  server_type       = var.consul_type
+  image             = var.wireguard_image
+  server_type       = var.instance_type
   location          = var.location
   labels            = {
                       "Name"   = var.env_name
                       "Stage"  = var.env_stage
   }
   ssh_key           = var.keyname
-  network_id        = data.terraform_remote_state.network.outputs.network_id
-  private_subnet_id = data.terraform_remote_state.network.outputs.private_subnet_id
   user_data         = templatefile (
 # ---------------------------------------------------------------------------------------------------------------------
 # THE MULTIPART/MIXED USER DATA SCRIPT THAT WILL RUN ON EACH CONSUL SERVER INSTANCE WHEN IT'S BOOTING
