@@ -1,14 +1,33 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
-version: 2.1
-# Use a package of configuration called an orb.
-orbs:
-  # Declare a dependency on the welcome-orb
-  welcome: circleci/welcome-orb@0.4.1
-# Orchestrate or schedule a set of jobs
 workflows:
-  # Name the workflow "welcome"
-  welcome:
-    # Run the welcome/run job in its own container
+  version: 2
+  wireguard_dns:
     jobs:
-      - welcome/run
+      - packer      
+
+version: 2
+
+parameters:
+  env_hcloud_token:
+    type: string
+    default: 
+      
+jobs:
+  packer:
+    machine:
+      image: ubuntu-2004:202010-01
+      environment:
+        HCLOUD_TOKEN: <<pipeline.parameters.env_hcloud_token>>
+      steps:
+        - checkout
+        - run:
+            name: Install packer
+            command: sudo apt -y install packer
+        - restore_cache:
+            key: deps1-{{ .Branch }}-{{ checksum "packer/wireguard-dns.yaml" }}
+        - run: 
+            name: Build a snapshot with packer
+            command: |
+              packer build packer/wireguard-dns.yaml
+        - save_cache:
+            key: deps1-{{ .Branch }}-{{ checksum "packer/wireguard-dns.yaml" }}
 
