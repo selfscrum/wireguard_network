@@ -10,5 +10,5 @@
     "instance_type" :"cpx11",
     "network_zone" :"eu-central",
     "location" : "nbg1",
-    "keyname" :"tfh_key",
+    "keyname" :"tfh_key"
 }
