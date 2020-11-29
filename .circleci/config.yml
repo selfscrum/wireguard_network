@@ -15,12 +15,8 @@ jobs:
       - run:
           name: Install packer
           command: sudo apt -y install packer
-      - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "./packer/wireguard-dns.yaml" }}
       - run: 
           name: Build a snapshot with packer
           command: |
             packer build packer/wireguard-dns.yaml
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "./packer/wireguard-dns.yaml" }}
 
