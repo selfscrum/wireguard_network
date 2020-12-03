@@ -87,3 +87,19 @@ resource "tfe_variable" "ws_network_zone" {
     workspace_id = tfe_workspace.wireguard_network.id
     description  = "network_zone of the Component"
 }
+
+resource "tfe_variable" "ws_subnet" {
+    key          = "subnet"
+    value        = lookup(local.system, "subnet")
+    category     = "terraform"
+    workspace_id = tfe_workspace.wireguard_network.id
+    description  = "subnet of the Component"
+}
+
+resource "tfe_variable" "ws_local_domain" {
+    key          = "local_domain"
+    value        = lookup(local.system, "local_domain")
+    category     = "terraform"
+    workspace_id = tfe_workspace.wireguard_network.id
+    description  = "local_domain of the Component"
+}

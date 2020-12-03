@@ -16,6 +16,8 @@ variable "wireguard_image" {}
 variable "instance_type" {}
 variable "keyname" {} 
 variable "network_zone" {}
+variable "subnet" {}
+variable "local_domain" {}
 
 provider "hcloud" {
   token = var.access_token
@@ -38,12 +40,13 @@ module "wireguard_server" {
   ssh_key           = var.keyname
   user_data         = templatefile (
 # ---------------------------------------------------------------------------------------------------------------------
-# THE MULTIPART/MIXED USER DATA SCRIPT THAT WILL RUN ON EACH CONSUL SERVER INSTANCE WHEN IT'S BOOTING
-# This script will provide some basic hardening and configure and start Consul
+# THE MULTIPART/MIXED USER DATA SCRIPT THAT WILL RUN ON EACH WIREGUARD SERVER INSTANCE WHEN IT'S BOOTING
 # ---------------------------------------------------------------------------------------------------------------------
                       "${path.module}/user-data-server.mm",
                         {
                         hcloud_token             = var.access_token,
+                        subnet                   = var.subnet,
+                        domain                   = var.local_domain,
                         cluster_tag_key          = var.env_name,
                         cluster_tag_value        = "0",
                         }

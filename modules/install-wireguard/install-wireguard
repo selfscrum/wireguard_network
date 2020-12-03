@@ -1,10 +1,113 @@
 #!/bin/bash
 
-echo "installing wireguard $1 ..."
-while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
+function print_usage {
+        echo
+        echo "Usage: install-wireguard [OPTIONS]"
+        echo
+        echo "This script can be used to install wireguard in a simple configuration."
+        echo
+        echo "Options:"
+        echo
+        echo -e "  --subnet\t\tThe CIDR Block for the managed subnet. Defaults to 10.0.0.0/8"
+        echo
+        echo "Example:"
+        echo
+        echo "  install-wireguard --subnet 192.168.0.0/16"
+}
 
-apt-get -y update
-apt-get -y install wireguard
-ufw allow 51820/udp
-ufw reload
-apt -y install resolvconf
+
+function log {
+        local -r level="$1"
+        local -r message="$2"
+        local -r timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+        >&2 echo -e "${timestamp} [${level}] [$SCRIPT_NAME] ${message}"
+}
+
+function log_info {
+        local -r message="$1"
+        log "INFO" "$message"
+}
+
+function log_warn {
+        local -r message="$1"
+        log "WARN" "$message"
+}
+
+function log_error {
+        local -r message="$1"
+        log "ERROR" "$message"
+}
+
+function assert_not_empty {
+        local -r arg_name="$1"
+        local -r arg_value="$2"
+
+        if [[ -z "$arg_value" ]]; then
+            log_error "The value for '$arg_name' cannot be empty"
+            print_usage
+            exit 1
+        fi
+}
+
+
+
+
+function allow_port_51820 {
+            local -r subnet="$1"
+            ufw allow from $subnet to any port 53 proto tcp
+            ufw allow from $subnet to any port 53 proto udp
+            ufw reload        
+}
+
+function install_wireguard {
+            apt-get -y update > /dev/null
+            apt-get -y install wireguard
+}
+
+function install_resolvconf {
+            # install for DNS function in wg-quick
+            apt -y install resolvconf
+}
+
+
+
+function install {
+            local domain="nodomain"
+            local threads="1"
+            local subnet="10.0.0.0/8"
+
+            while [[ $# -gt 0 ]]; do
+            local key="$1"
+
+            case "$key" in
+                --subnet)
+                assert_not_empty "$key" "$2"
+                subnet="$2"
+                shift
+                ;;
+                *)
+                log_error "Unrecognized argument: $key"
+                print_usage
+                exit 1
+                ;;
+            esac
+
+            shift
+            done
+
+            log_info "Starting Wireguard install"
+
+            install_wireguard
+            install_resolvconf
+            allow_port_51820 $subnet
+
+            if command -v wg; then
+                    log_info "Wireguard install complete!";
+            else
+                    log_info "Could not find wg command. Aborting.";
+            exit 1;
+            fi
+}
+
+while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done
+install "$@"

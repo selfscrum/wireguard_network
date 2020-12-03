@@ -1,14 +1,18 @@
 {
-    "system_function" : "WIREGUARD",
-    "github_user" : "selfscrum",
-    "github_repo" : "wireguard_network",
-    "tfc_organization" :"selfscrum",
-    "workspace" : "wireguard_network",
-    "env_name" : "wireguard", 
-    "env_stage" : "dev",
-    "wireguard_image" : "27001911",
-    "instance_type" :"cpx11",
-    "network_zone" :"eu-central",
-    "location" : "nbg1",
-    "keyname" :"tfh_key"
+    "system_function" :     "WIREGUARD",
+    "github_user" :         "selfscrum",
+    "github_repo" :         "wireguard_network",
+    "tfc_organization" :    "selfscrum",
+    "workspace" :           "wireguard_network",
+    "env_name" :            "wireguard", 
+    "env_stage" :           "dev",
+    "wireguard_image" :     "27010555",
+    "instance_type" :       "cpx11",
+    "network_zone" :        "eu-central",
+    "location" :            "nbg1",
+    "keyname" :             "tfh_key",
+    "local_domain" :        "selfscrum.internal",
+    "subnet" :              "192.168.0.0/16"
 }
+
+

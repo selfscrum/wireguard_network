@@ -34,8 +34,8 @@ runcmd:
     - sed -i -e '/^#AuthorizedKeysFile/s/^.*$/AuthorizedKeysFile .ssh\/authorized_keys/' /etc/ssh/sshd_config
     - sed -i '$a AllowUsers desixma' /etc/ssh/sshd_config
     - sleep 5
-    - apt update -y
-    - apt install hcloud-cli
+#    - apt update -y
+#    - apt install hcloud-cli
 
 cloud_final_modules:
 - [scripts-user, always]

@@ -1,8 +1,9 @@
 {
   "min_packer_version": "0.12.0",
   "variables": {
-    "domain": "desixma.internal",
-    "threads": "1"
+    "domain": "selfscrum.internal",
+    "threads": "1",
+    "subnet": "192.168.0.0/16"
   },
   "builders": [{
     "image": "ubuntu-20.04",
@@ -24,9 +25,9 @@
     "type": "shell",
     "inline": [
       "sudo chmod +x /tmp/wireguard_dns/modules/install-wireguard/install-wireguard",
-      "sudo /tmp/wireguard_dns/modules/install-wireguard/install-wireguard",
+      "sudo /tmp/wireguard_dns/modules/install-wireguard/install-wireguard --subnet {{user `subnet`}}",
       "sudo chmod +x /tmp/wireguard_dns/modules/install-unbound/install-unbound",
-      "sudo /tmp/wireguard_dns/modules/install-unbound/install-unbound --domain {{user `domain`}} --threads {{user `threads`}}",
+      "sudo /tmp/wireguard_dns/modules/install-unbound/install-unbound --domain {{user `domain`}} --threads {{user `threads`}} --subnet {{user `subnet`}}",
       "sudo rm -rf /tmp/wireguard_dns"
     ],
     "pause_before": "15s"
