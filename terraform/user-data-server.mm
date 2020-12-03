@@ -21,8 +21,8 @@ packages:
 package_update: true
 package_upgrade: true
 runcmd:
-    - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
-    - systemctl enable fail2ban
+#    - printf "[sshd]\nenabled = true\nbanaction = iptables-multiport" > /etc/fail2ban/jail.local
+#    - systemctl enable fail2ban
     - ufw allow OpenSSH
     - ufw enable
     - sed -i -e '/^PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
