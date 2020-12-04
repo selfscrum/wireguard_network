@@ -101,10 +101,10 @@ function allow_port_53 {
 }
 
 function create_unbound_conf {
-        domain=$1
-        threads=$2
-        slabs=$((2 * $threads))
-        subnet=$3
+        local -r domain=$1
+        local -r threads=$2
+        local -r slabs=$((2 * $threads))
+        local -r subnet=$3
 
         cat << EOF > /etc/unbound/unbound.conf
 ## Authoritative, validating, recursive caching DNS
@@ -149,6 +149,8 @@ server:
 
 include: "/etc/unbound/unbound.conf.d/*.conf" 
 EOF
+        chmod 640 /etc/unbound/unbound.conf
+        chmod 640 /etc/unbound/unbound.conf.d/*.conf
 }
 
 function install {

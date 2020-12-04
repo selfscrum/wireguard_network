@@ -50,8 +50,16 @@ Content-Disposition: attachment; filename="userdata.txt"
 # This script is meant to be run in the User Data of each Instance while it is booting. 
 # Note that this script assumes it is running in an hcloud snapshot built from the Packer template in packer/wireguard-dns.yaml.
 
-set -e
+        set -e
 
-echo "started wg" > /tmp/started.txt
+        local -r host_name=$(hostname -s)
+        local -r host_ip=$(hostname -I | awk -F ' ' '{print $1}')
+
+        cat << EOF > /etc/unbound/unbound.conf.d/this.conf
+server:
+    local-data: "$host_name.     IN A $host_ip"
+    local-data-ptr: "$host_ip  $host_name"
+EOF
+        chmod 640 /etc/unbound/unbound.conf.d/this.conf
 
 --//
