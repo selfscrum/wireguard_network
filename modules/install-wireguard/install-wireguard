@@ -73,7 +73,7 @@ function install_resolvconf {
             apt -y install resolvconf
 }
 
-function install_resolvconf {
+function install_utilities {
             apt -y install jq
             apt -y install nc
 }
