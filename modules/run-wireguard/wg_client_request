@@ -1,0 +1,117 @@
+#!/bin/bash
+
+readonly REQUEST_ERROR=404
+readonly CLIENT_EXISTS=40401
+readonly INVALID_ID=40402
+readonly INVALID_PUBLIC_KEY=40403
+readonly NO_MORE_SPACE=40405
+
+function log {
+        local -r level="$1"
+        local -r message="$2"
+        local -r timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+        >&2 echo -e "$timestamp [$level] [$SCRIPT_NAME] $message"
+}
+
+function log_info {
+        local -r message="$1"
+        log "INFO" "$message"
+}
+
+function log_warn {
+        local -r message="$1"
+        log "WARN" "$message"
+}
+
+function log_error {
+        local -r message="$1"
+        log "ERROR" "$message"
+}
+
+function assert_not_empty {
+        local -r arg_name="$1"
+        local -r arg_value="$2"
+
+        if [[ -z "$arg_value" ]]; then
+            log_error "The value for '$arg_name' cannot be empty"
+            exit 1
+        fi
+}
+
+function replace_or_insert {
+        local -r line="$1"
+        local -r expression=`echo $line | awk -F '=' '{print $1}' | tr -d ' '`
+        local -r file="$2"
+        
+        grep -q $expression $file
+        if [[ $? -ne 0 ]] ; then
+            echo $line >> $file
+        else
+            sed -i -e "s/^.*$expression.*$/$line/" $file
+        fi
+}
+
+##
+function print_usage {
+        echo "ERROR - Missing or illegal argument."
+        echo "Usage: $(basename $0) <wg_id> <client_public key>"
+}
+
+##
+function assert_valid_id {
+        local -r wg_id=$1 ; assert_not_empty "assert_valid_id" "$wg_id"
+
+        if [[ $(sudo ls -1 /etc/wireguard/$wg_id.conf 2> /dev/null | wc -l) -eq "0" ]] ; then
+            print_usage
+            exit $INVALID_ID
+        fi
+}
+
+## 
+function get_server_public_key {
+        local -r wg_id=$1 ; assert_not_empty "get_server_public_key" "$wg_id"
+
+        sudo cat /etc/wireguard/.$wg_id.server_public_key
+}
+
+## 
+function get_endpoint_public_ip {
+        hostname -I | awk -F ' ' '{print $1}'
+}
+
+##
+function get_server_port {
+        local -r wg_id=$1 ; assert_not_empty "get_server_port" "$wg_id"
+
+        sudo cat /etc/wireguard/$wg_id.port
+}
+
+##
+function get_subnet {
+        local -r wg_id=$1 ; assert_not_empty "get_subnet" "$wg_id"
+
+        sudo cat /etc/wireguard/$wg_id.subnet
+}
+
+##
+function run {
+        wg_id=$1
+        client_public_key=$2
+
+        if [[ -z $wg_id || -z $client_public_key ]] ; then
+            print_usage
+            exit $REQUEST_ERROR
+        fi
+
+        assert_valid_id $wg_id
+
+        echo "{"
+        echo "    \"proposed_ip\" : \"string\","
+        echo "    \"cidr\" : \"$(get_subnet $wg_id)\","
+        echo "    \"server_public_key\" : \"$(get_server_public_key $wg_id)\","
+        echo "    \"endpoint_address\" : \"$(get_endpoint_public_ip)\","
+        echo "    \"endpoint_port\" : \"$(get_server_port $wg_id)\""
+        echo "}"
+}
+
+run "$@"

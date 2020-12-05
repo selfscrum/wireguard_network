@@ -66,6 +66,8 @@ function install_wireguard {
             cp $SCRIPT_DIR/../run-wireguard/run-wireguard /opt/wg/bin/run-wireguard
             chmod a+x /opt/wg/bin/run-wireguard
 
+            cp $SCRIPT_DIR/../run-wireguard/wg_client_request /opt/wg/bin/wg_client_request
+            chmod a+x /opt/wg/bin/wg_client_request
 }
 
 function install_resolvconf {

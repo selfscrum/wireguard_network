@@ -8,7 +8,7 @@ This script is typically placed on the vpn server image, and is being started on
 
 # client communication functions
 
-## wg_attach_request
+## wg_client_request
 ```
 in: 
 {

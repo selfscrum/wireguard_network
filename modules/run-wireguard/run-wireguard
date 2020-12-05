@@ -96,7 +96,23 @@ function create_vpnserver_keys {
 
 ## 
 function create_randomport {
-        local -r randomport=$(shuf -i49152-65535 -n1)
+        local randomport=""
+        local udpports=""
+
+        # find used udp ports
+        for i in $(ufw status | grep "udp.*ALLOW" | awk -F ' ' '{print $1}' | awk -F '/' '{print $1}' | sort | uniq); do
+                udpports+=($i)
+        done
+
+        # find a random port not already used
+        while [[ -z $randomport ]] ; do
+                randomport=$(shuf -i49152-65535 -n1)
+                for i in "${udpports[@]}"; do
+                        if [[ $i == $randomport ]] ; then
+                                randomport=""
+                        fi
+                done
+        done
         echo $randomport
 }
 
@@ -106,6 +122,7 @@ function create_vpnserver_config {
         local -r subnet=$2; assert_not_empty "create_vpnserver_config.subnet" $subnet
         local -r port=$3;   assert_not_empty "create_vpnserver_config.port" $port
 
+        # create serverside config for wireguard.
         umask 077
         cat <<EOF > /etc/wireguard/$wgname.conf
 [Interface]
@@ -116,7 +133,12 @@ ListenPort = $port
 PostUp = ufw allow $port/udp ; ufw route allow in on $wgname out on $wgname ; ufw reload
 PreDown = ufw delete allow $port/udp ; ufw reload; ufw --force delete \`ufw status numbered | grep -E "Anywhere.*v6.*on $wgname.*Anywhere.*v6.*on $wgname" | tr -d '\[' | tr -d '\]' | awk -F ' ' '{print \$1}'\`; ufw reload; ufw --force delete \`ufw status numbered | grep -E "Anywhere.*on $wgname.*Anywhere.*on $wgname" | tr -d '\[' | tr -d '\]' | awk -F ' ' '{print \$1}'\` ; ufw reload
 DNS = $(vpnserver_address $subnet "addressonly")
+###--###
 EOF
+        # keep request data
+        echo $subnet > /etc/wireguard/.$wgname.subnet
+        echo $port > /etc/wireguard/.$wgname.port
+        echo $(vpnserver_address $subnet "addressonly") > /etc/wireguard/.$wgname.vpnserver
 }
 
 function run_vpnserver {
