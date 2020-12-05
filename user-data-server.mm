@@ -45,6 +45,7 @@ Content-Type: text/x-shellscript; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="userdata.txt"
+#!/bin/bash
 
 # This script is meant to be run in the User Data of each Instance while it is booting. 
 # Note that this script assumes it is running in an hcloud snapshot built from the Packer template in packer/wireguard-dns.yaml.
