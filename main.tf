@@ -28,7 +28,7 @@ provider "hcloud" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 module "wireguard_server" {
-  source = "../modules/wireguard_server"
+  source = "modules/wireguard_server"
   cluster_name      = format("%s-%s-server",var.env_stage, var.env_name)
   image             = var.wireguard_image
   server_type       = var.instance_type
