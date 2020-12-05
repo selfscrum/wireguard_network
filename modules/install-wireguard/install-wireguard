@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 function print_usage {
         echo
         echo "Usage: install-wireguard [OPTIONS]"
@@ -49,10 +51,7 @@ function assert_not_empty {
         fi
 }
 
-
-
-
-function allow_port_51820 {
+function allow_port_53 {
             local -r subnet="$1"
             ufw allow from $subnet to any port 53 proto tcp
             ufw allow from $subnet to any port 53 proto udp
@@ -62,6 +61,11 @@ function allow_port_51820 {
 function install_wireguard {
             apt-get -y update > /dev/null
             apt-get -y install wireguard
+
+            mkdir -p /opt/wg/bin
+            cp $SCRIPT_DIR/../run-wireguard/run-wireguard /opt/wg/bin/run-wireguard
+            chmod a+x /opt/wg/bin/run-wireguard
+
 }
 
 function install_resolvconf {
@@ -69,6 +73,10 @@ function install_resolvconf {
             apt -y install resolvconf
 }
 
+function install_resolvconf {
+            apt -y install jq
+            apt -y install nc
+}
 
 
 function install {
@@ -99,7 +107,8 @@ function install {
 
             install_wireguard
             install_resolvconf
-            allow_port_51820 $subnet
+            install_utilities
+            allow_port_53 $subnet
 
             if command -v wg; then
                     log_info "Wireguard install complete!";
