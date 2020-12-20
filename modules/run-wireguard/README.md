@@ -2,11 +2,13 @@
 
 ## run-wireguard
 
-Script to initialize a wireguard server that has already the software installed.
+Script to initialize a wireguard server that has already installed the software.
 This script is typically placed on the vpn server image, and is being started once on machine creation time via the cloud-init script.
-
+It can be used to place additional wg subnets
 
 # client communication functions
+
+These clients mimic an API gateway which this module does not contain. It can be used for manual administration.
 
 ## wg_client_request
 ```

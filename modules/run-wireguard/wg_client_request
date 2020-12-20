@@ -83,14 +83,14 @@ function get_endpoint_public_ip {
 function get_server_port {
         local -r wg_id=$1 ; assert_not_empty "get_server_port" "$wg_id"
 
-        sudo cat /etc/wireguard/$wg_id.port
+        sudo cat /etc/wireguard/.$wg_id.port
 }
 
 ##
 function get_subnet {
         local -r wg_id=$1 ; assert_not_empty "get_subnet" "$wg_id"
 
-        sudo cat /etc/wireguard/$wg_id.subnet
+        sudo cat /etc/wireguard/.$wg_id.subnet
 }
 
 ##
