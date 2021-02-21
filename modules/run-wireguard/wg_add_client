@@ -173,11 +173,11 @@ function add_client_to_conf {
     local -r address=$2 ; assert_not_empty "add_client_to_conf.address" "$address"
     local -r key=$3; assert_not_empty "add_client_to_conf.key" $key
 
-    echo "" >> $wg_id.conf
-    echo "[Peer]" >> $wg_id.conf
-    echo "PublicKey=$key" >> $wg_id.conf
-    echo "AllowedIPs=$address" >> $wg_id.conf
-    echo "" >> $wg_id.conf
+    echo "" >> /etc/wireguard/$wg_id.conf
+    echo "[Peer]" >> /etc/wireguard/$wg_id.conf
+    echo "PublicKey=$key" >> /etc/wireguard/$wg_id.conf
+    echo "AllowedIPs=$address" >> /etc/wireguard/$wg_id.conf
+    echo "" >> /etc/wireguard/$wg_id.conf
 }
 
 ##
