@@ -24,5 +24,6 @@ Documentation is sparse.
 
 # Adding a Wireguard client
 
+* initially, make sure your domain ist correctly represented in `/etc/wireguard/.wg0.domain`, e.g. `example.internal`
 * as root, run `/opt/wg/bin/wg_add_client wg0 <planned-dns-name-of-client-without-domain>`
 * copy the client information or use the QR code, it will not be kept.
