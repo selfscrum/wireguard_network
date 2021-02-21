@@ -6,7 +6,7 @@
     "workspace" :           "wireguard_network",
     "env_name" :            "wireguard", 
     "env_stage" :           "dev",
-    "wireguard_image" :     "32378933",
+    "wireguard_image" :     "32380110",
     "instance_type" :       "cpx11",
     "network_zone" :        "eu-central",
     "location" :            "nbg1",
