@@ -16,15 +16,11 @@ Documentation is sparse.
 
 ## Installation
 
-* create server template with packer
+* create server template with packer. Make sure that in `packer/wireguard-dns.yaml` you have the same subnet and domain that you want to use later in `workspace/assets/system.json`.
 * update packer snapshot id in `workspace/assets/system.json`
 * run local terraform in workspace directory, which will create a terraform cloud workspace
 * complete preparation of Cloud workspace, especially git connection and passwords
 * run terraform cloud initially by queuing a run request. Later on, github updates will cause the system to auto-update
-
-some minor bugs need workarounds:
-* initially, make sure your domain ist correctly represented in `/etc/wireguard/.wg0.domain`, e.g. `example.internal`
-* restart dns once: `sudo systemctl restart unbound`
 
 # Adding a Wireguard client
 
