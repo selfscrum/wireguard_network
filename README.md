@@ -22,8 +22,11 @@ Documentation is sparse.
 * complete preparation of Cloud workspace, especially git connection and passwords
 * run terraform cloud initially by queuing a run request. Later on, github updates will cause the system to auto-update
 
+some minor bugs need workarounds:
+* initially, make sure your domain ist correctly represented in `/etc/wireguard/.wg0.domain`, e.g. `example.internal`
+* restart dns once: `sudo systemctl restart unbound`
+
 # Adding a Wireguard client
 
-* initially, make sure your domain ist correctly represented in `/etc/wireguard/.wg0.domain`, e.g. `example.internal`
 * as root, run `/opt/wg/bin/wg_add_client wg0 <planned-dns-name-of-client-without-domain>`
 * copy the client information or use the QR code, it will not be kept.

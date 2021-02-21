@@ -151,7 +151,7 @@ function run_vpnserver {
 function keep_domain {
         local -r wgname=$1; assert_not_empty "keep_domain.wgname" $wgname
         local -r domain=$2; assert_not_empty "keep_domain.domain" $domain
-        echo $domain > .$wgname.domain
+        echo $domain > /etc/wireguard/.$wgname.domain
 }
 
 function enable_ip_forwarding {
