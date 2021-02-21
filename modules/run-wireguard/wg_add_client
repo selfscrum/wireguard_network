@@ -1,2 +1,282 @@
 #!/bin/bash
 
+readonly REQUEST_ERROR=404
+readonly CLIENT_EXISTS=40401
+readonly INVALID_ID=40402
+readonly INVALID_PUBLIC_KEY=40403
+readonly INVALID_NAME=40404
+readonly NO_MORE_SPACE=40405
+
+function log {
+        local -r level="$1"
+        local -r message="$2"
+        local -r timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+        >&2 echo -e "$timestamp [$level] [$SCRIPT_NAME] $message"
+}
+
+function log_info {
+        local -r message="$1"
+        log "INFO" "$message"
+}
+
+function log_warn {
+        local -r message="$1"
+        log "WARN" "$message"
+}
+
+function log_error {
+        local -r message="$1"
+        log "ERROR" "$message"
+}
+
+function assert_not_empty {
+        local -r arg_name="$1"
+        local -r arg_value="$2"
+
+        if [[ -z "$arg_value" ]]; then
+            log_error "The value for '$arg_name' cannot be empty"
+            exit 1
+        fi
+}
+
+function replace_or_insert {
+        local -r line="$1"
+        local -r expression=`echo $line | awk -F '=' '{print $1}' | tr -d ' '`
+        local -r file="$2"
+        
+        grep -q $expression $file
+        if [[ $? -ne 0 ]] ; then
+            echo $line >> $file
+        else
+            sed -i -e "s/^.*$expression.*$/$line/" $file
+        fi
+}
+
+##
+function print_usage {
+        echo "ERROR - Missing or illegal argument."
+        echo "Usage: $(basename $0) <wg_id> <valid-client-dns-name> [<client_public key>]"
+}
+
+##
+function assert_valid_id {
+        local -r wg_id=$1 ; assert_not_empty "assert_valid_id.wg_id" "$wg_id"
+
+        if [[ $(sudo ls -1 /etc/wireguard/$wg_id.conf 2> /dev/null | wc -l) -eq "0" ]] ; then
+            print_usage
+            exit $INVALID_ID
+        fi
+}
+
+##
+function assert_valid_name {
+        local -r dns_name=$1 ; assert_not_empty "assert_valid_name.dns_name" "$dns_name"
+
+        if [[ $(echo $dns_name | grep -P "^[a-zA-Z][a-zA-Z0-9-.]*$" | wc -l) -eq 0 ]] ; then
+            print_usage
+            exit $INVALID_NAME
+        fi
+}
+
+## 
+function get_server_public_key {
+        local -r wg_id=$1 ; assert_not_empty "get_server_public_key.wg_id" "$wg_id"
+
+        sudo cat /etc/wireguard/.$wg_id.server_public_key
+}
+
+## 
+function get_endpoint_public_ip {
+        hostname -I | awk -F ' ' '{print $1}'
+}
+
+##
+function get_server_port {
+        local -r wg_id=$1 ; assert_not_empty "get_server_port.wg_id" "$wg_id"
+
+        sudo cat /etc/wireguard/.$wg_id.port
+}
+
+##
+function get_subnet {
+        local -r wg_id=$1 ; assert_not_empty "get_subnet.wg_id" "$wg_id"
+
+        sudo cat /etc/wireguard/.$wg_id.subnet
+}
+
+##
+function get_dns {
+        local -r wg_id=$1 ; assert_not_empty "get_dns.wg_id" "$wg_id"
+
+        sudo cat /etc/wireguard/.$wg_id.vpnserver
+}
+
+##
+function reserve_address {
+        local -r wg_id=$1 ; assert_not_empty "reserve_address.wg_id" "$wg_id"
+        local -r key=$2 ; assert_not_empty "reserve_address.key" "$key"
+
+        if [[ $(cat /etc/wireguard/.$wg_id.ips | grep -e "$key$" | wc -l) -ne 0 ]] ; then
+            log "ERROR" "CLIENT_EXISTS"
+            exit $CLIENT_EXISTS
+        fi
+
+        new=1
+        lastip=2
+		while IFS= read -r line; do
+                stored_ip=$(echo $line | awk -F '|' '{print $1}')
+                stored_key=$(echo $line | awk -F '|' '{print $2}')
+                if [[ $lastip -eq stored_ip && -z  $stored_key ]] ; then
+                    new=0
+                    break
+                fi
+                lastip=$((lastip+1))
+                if [[ $lastip -eq 254 ]] ; then
+                    log "ERROR" "NO_MORE_SPACE"
+                    exit $NO_MORE_SPACE
+                fi 
+		done < /etc/wireguard/.$wg_id.ips
+
+        if [[ new -eq 0 ]] ; then
+            sed -i -e "/^$lastip|/s/^.*$/$lastip|$key/" /etc/wireguard/.$wg_id.ips
+        else
+            echo "$lastip|$key" >> /etc/wireguard/.$wg_id.ips
+        fi
+        echo $lastip
+}
+
+##
+function get_unused_ip {
+    local -r wg_id=$1 ; assert_not_empty "get_unused_ip.wg_id" "$wg_id"
+    local -r key=$2 ; assert_not_empty "get_unused_ip.key" "$key"
+    local -r subnet=$3; assert_not_empty "get_unused_ip.subnet" $subnet
+
+    local -r addressrange=$(echo $subnet | awk -F '/' '{print $2}')
+    assert_not_empty "get_unused_ip.addressrange" $addressrange
+
+    local -r netmask=$(echo $subnet | awk -F '/' '{print $1}')
+    assert_not_empty "get_unused_ip.netmask" $netmask
+
+    local topbytes=$(echo $netmask | awk -F '.' '{print $1"."$2"."$3"."}')
+    local address=$(reserve_address $wg_id $key)
+    assert_not_empty "get_unused_ip.reserve_address" $address
+
+    if [[ -n $address ]] ; then
+        echo "$topbytes""$address"
+    fi
+}
+
+
+##
+function add_client_to_conf {
+    local -r wg_id=$1 ; assert_not_empty "add_client_to_conf.wg_id" "$wg_id"
+    local -r address=$2 ; assert_not_empty "add_client_to_conf.address" "$address"
+    local -r key=$3; assert_not_empty "add_client_to_conf.key" $key
+
+    echo "" >> $wg_id.conf
+    echo "[Peer]" >> $wg_id.conf
+    echo "PublicKey=$key" >> $wg_id.conf
+    echo "AllowedIPs=$address" >> $wg_id.conf
+    echo "" >> $wg_id.conf
+}
+
+##
+function create_client_key_pair {
+    local -r wg_id=$1 ; assert_not_empty "create_client_key_pair.wg_id" "$wg_id"
+    local -r tmp_address=$2 ; assert_not_empty "create_client_key_pair.tmp_address" "$tmp_address"
+    
+    wg genkey | sudo tee /etc/wireguard/.$wg_id.clients/$tmp_address.key | wg pubkey
+}
+
+##
+function get_client_private_key {
+    local -r wg_id=$1 ; assert_not_empty "get_client_private_key.wg_id" "$wg_id"
+    local -r tmp_address=$2 ; assert_not_empty "get_client_private_key.tmp_address" "$tmp_address"
+
+    cat /etc/wireguard/.$wg_id.clients/$tmp_address.key
+    rm /etc/wireguard/.$wg_id.clients/$tmp_address.key
+}
+
+function register_client_at_dns {
+        local -r wg_id=$1 ; assert_not_empty "register_client_at_dns.wg_id" "$wg_id"
+        local -r host_name=$2 ; assert_not_empty "register_client_at_dns.host_name" $host_name
+        local -r host_ip=$3 ; assert_not_empty "register_client_at_dns.host_ip" "$host_ip"
+        local -r domain=$(cat /etc/wireguard/.$wg_id.domain); assert_not_empty "register_client_at_dns.domain" "$domain"
+
+        cat << EOF > /etc/unbound/unbound.conf.d/$wg_id.$host_name.$domain.conf
+server:
+    local-data: "$host_name.$domain.     IN A $host_ip"
+    local-data-ptr: "$host_ip  $host_name.$domain"
+EOF
+        chmod 640 /etc/unbound/unbound.conf.d/$wg_id.$host_name.$domain.conf
+        systemctl restart unbound
+}
+
+##
+# main script function
+#
+function run {
+        wg_id=$1
+        client_dns_name=$2
+        client_public_key=$3
+
+        if [[ -z $wg_id || -z $client_dns_name ]] ; then
+            print_usage
+            exit $REQUEST_ERROR
+        fi
+
+        assert_valid_id $wg_id
+        assert_valid_name $client_dns_name
+
+        touch /etc/wireguard/.$wg_id.ips
+        mkdir -p /etc/wireguard/.$wg_id.clients
+        chmod 700 /etc/wireguard/.$wg_id.clients
+
+        tmp_address=$RANDOM
+
+        # create wg client key pair if public key not passed in as parameter
+        if [[ -z $client_public_key ]] ; then
+            client_public_key=$(create_client_key_pair $wg_id $tmp_address)
+            client_private_key=$(get_client_private_key $wg_id $tmp_address)
+        else
+            client_private_key="YourPrivateKeyHere"
+        fi
+
+
+        # find a free ip address for client in the subnet
+        client_address=$(get_unused_ip $wg_id $client_public_key $(get_subnet $wg_id))
+        assert_not_empty "run.client_address" $client_address
+
+        if [[ -n $client_address ]] ; then
+            # shut down wg briefly to add new client, then start again
+            wg-quick down $wg_id
+            add_client_to_conf $wg_id $client_address"/32" $client_public_key
+            wg-quick up $wg_id
+
+            register_client_at_dns $wg_id $client_dns_name $client_address
+
+            # create config file for client
+            cat << EOF > /etc/wireguard/.$wg_id.clients/$tmp_address.conf   
+[Interface]
+Address=$client_address/32
+DNS=$(get_dns $wg_id)
+PrivateKey=$client_private_key
+
+[Peer]
+PublicKey=$(get_server_public_key $wg_id)
+AllowedIPs=$(get_subnet $wg_id)
+Endpoint=$(get_endpoint_public_ip):$(get_server_port $wg_id)
+PersistentKeepalive=25
+EOF
+            # display config file as QR code and as plain text, then delete to keep confidentiality
+            if [[ -n /etc/wireguard/.$wg_id.clients/$tmp_address.conf ]] ; then
+                qrencode -t ansiutf8 < /etc/wireguard/.$wg_id.clients/$tmp_address.conf
+                echo ""
+            fi
+            cat /etc/wireguard/.$wg_id.clients/$tmp_address.conf 
+            rm /etc/wireguard/.$wg_id.clients/$tmp_address.conf
+            echo ""
+        fi
+}
+
+run "$@"

@@ -49,7 +49,8 @@ function replace_or_insert {
 
 ##
 function register_vpnserver_at_dns {
-        local -r host_name=$(hostname -s)
+        local -r domain=$1; assert_not_empty "register_vpnserver_at_dns.domain" $domain
+        local -r host_name=$(hostname -s).$domain
         local -r host_ip=$(hostname -I | awk -F ' ' '{print $1}')
 
         cat << EOF > /etc/unbound/unbound.conf.d/this.conf
@@ -147,6 +148,12 @@ function run_vpnserver {
         systemctl enable wg-quick@wg0.service
 }
 
+function keep_domain {
+        local -r wgname=$1; assert_not_empty "keep_domain.wgname" $wgname
+        local -r domain=$2; assert_not_empty "keep_domain.domain" $domain
+        echo $domain > .$wgname.domain
+}
+
 function enable_ip_forwarding {
         replace_or_insert "net.ipv4.ip_forward=1" "/etc/sysctl.conf"
         sysctl -p
@@ -168,10 +175,13 @@ function enable_ip_forwarding {
 function run {
         local -r wgname=$1; assert_not_empty "run.wgname" $wgname
         local -r subnet=$2; assert_not_empty "run.subnet" $subnet
-        register_vpnserver_at_dns
+        local -r domain=$3; assert_not_empty "run.domain" $domain
+        register_vpnserver_at_dns $domain
         create_vpnserver_keys $wgname
         port=$(create_randomport)
         log_info $port
+        keep_domain $wgname $domain
+        log_info $domain
         create_vpnserver_config $wgname $subnet $port
         run_vpnserver $wgname
 #        enable_firewall $wgname $port

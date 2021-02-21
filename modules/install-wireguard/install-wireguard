@@ -78,6 +78,7 @@ function install_resolvconf {
 function install_utilities {
             apt -y install jq
             apt -y install nc
+            apt -y install qrencode
 }
 
 

@@ -50,6 +50,6 @@ Content-Disposition: attachment; filename="userdata.txt"
 # This script is meant to be run in the User Data of each Instance while it is booting. 
 # Note that this script assumes it is running in an hcloud snapshot built from the Packer template in packer/wireguard-dns.yaml.
 
-/opt/wg/bin/run-wireguard "wg0" ${subnet}
+/opt/wg/bin/run-wireguard "wg0" ${subnet} ${domain}
 
 --//

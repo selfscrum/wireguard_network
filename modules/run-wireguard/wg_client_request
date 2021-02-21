@@ -106,7 +106,7 @@ function run {
         assert_valid_id $wg_id
 
         echo "{"
-        echo "    \"proposed_ip\" : \"string\","
+        echo "    \"proposed_ip\" : \"in-the-future-this-is-the-proposed-ip\","
         echo "    \"cidr\" : \"$(get_subnet $wg_id)\","
         echo "    \"server_public_key\" : \"$(get_server_public_key $wg_id)\","
         echo "    \"endpoint_address\" : \"$(get_endpoint_public_ip)\","

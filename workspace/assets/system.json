@@ -11,7 +11,7 @@
     "network_zone" :        "eu-central",
     "location" :            "nbg1",
     "keyname" :             "tfh_key",
-    "local_domain" :        "selfscrum.internal",
+    "local_domain" :        "rfnl.internal",
     "subnet" :              "192.168.0.0/16"
 }
 

@@ -1,5 +1,7 @@
 # wireguard operative interface
 
+- not completed - 
+
 ## run-wireguard
 
 Script to initialize a wireguard server that has already installed the software.
@@ -37,11 +39,16 @@ data:
 ```
 
 ## wg_add_client
+
+This call request a complete client configuration from the server's wireguard environment. 
+It is expected that the resulting data which can be used at the client are already incorporated into the server's configuration.
+
 ```
 in: 
 {
     "wg_id" : "string",
-    "client_public_key" : "string"
+    "client_dns_name" : "string",
+    "client_public_key" : "string" (optional),
     "allowed_ips" : ["string"],
 }
 ```
